@@ -171,31 +171,37 @@
             text-align: center;
         }
         
-        #resolution-selector {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .res-btn {
-            font-family: 'DungGeunMo', cursive;
-            font-size: 14px;
-            padding: 5px 10px;
-            border: 2px solid var(--border-color);
-            background-color: #ddd;
-            cursor: pointer;
-        }
-        .res-btn.active {
-            background-color: var(--btn-bg);
-            box-shadow: 2px 2px 0px var(--border-color);
+        /* --- 반응형 웹 디자인 적용 --- */
+        @media (max-width: 768px) {
+            #game-container {
+                width: 95vw;
+                height: 90vh;
+            }
+            #info-bar { 
+                font-size: 12px; 
+                padding: 10px; 
+                gap: 5px;
+            }
+            #korean-meaning-container { 
+                font-size: 16px; 
+                top: 65px; 
+            }
+            .overlay h2 { font-size: 20px; }
+            .overlay p { font-size: 12px; }
+            .btn { font-size: 16px; padding: 12px 24px; }
+            .word { font-size: 14px; padding: 6px 10px; }
+
+            #timer-settings-container {
+                /* 작은 화면에서 시간 조절 UI가 SCORE 아래로 가도록 설정 */
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                padding-top: 5px;
+            }
+             #score-container { order: 1;}
+             #timer-container { order: 2;}
         }
 
-        #game-container.mobile-view {
-            width: 375px;
-            height: 85vh;
-            max-height: 700px;
-            max-width: 95vw;
-        }
     </style>
 </head>
 <body>
@@ -215,11 +221,7 @@
         <div id="game-area">
             <div id="start-screen" class="overlay">
                 <h2>단어 맞추기 게임</h2>
-                <div id="resolution-selector">
-                    <span>해상도:</span>
-                    <button id="res-pc-btn" class="res-btn active">PC</button>
-                    <button id="res-mobile-btn" class="res-btn">모바일</button>
-                </div>
+                <!-- 해상도 선택 버튼 제거 -->
                 <p>
                     CSV 파일을 선택하세요. (EUC-KR 인코딩 권장)<br>
                     (예: apple,사과)<br>
@@ -256,15 +258,12 @@
         const timeMinusBtn = document.getElementById('time-minus-btn');
         const timePlusBtn = document.getElementById('time-plus-btn');
         const autoAdvanceTimeDisplay = document.getElementById('auto-advance-time-display');
-        const resPcBtn = document.getElementById('res-pc-btn');
-        const resMobileBtn = document.getElementById('res-mobile-btn');
 
-        const GAME_TIME = 60;
         const SPECIAL_MESSAGES = ["Good Job", "Excellent", "You are Genius"];
         
         let WORDS = [];
         let score = 0;
-        let timeLeft = GAME_TIME;
+        let timeLeft = 60;
         let currentTargetWord = '';
         let timerInterval;
         let questionTimeout;
@@ -276,7 +275,7 @@
         
         function init() {
             score = 0;
-            timeLeft = GAME_TIME;
+            timeLeft = 60;
             scoreDisplay.textContent = '0';
             totalWordsDisplay.textContent = WORDS.length > 0 ? WORDS.length : '0';
             timerDisplay.textContent = timeLeft;
@@ -287,9 +286,6 @@
             fileUploadLabel.textContent = '파일 선택';
             fileUploadLabel.style.backgroundColor = 'var(--btn-bg)';
             gameArea.querySelectorAll('.word').forEach(word => word.remove());
-            gameContainer.classList.remove('mobile-view');
-            resPcBtn.classList.add('active');
-            resMobileBtn.classList.remove('active');
         }
         
         function handleFileSelect(event) {
@@ -378,7 +374,6 @@
             }
         }
         
-        // --- 기능 개선: 단어 겹침 방지 및 위치 조정 ---
         function checkCollision(rect1, rect2) {
             const padding = 5; 
             return (
@@ -479,7 +474,7 @@
             }
             startScreen.style.display = 'none';
             score = 0;
-            timeLeft = GAME_TIME;
+            timeLeft = WORDS.length * 5; // 전체 시간을 단어 수 * 5초로 설정
             scoreDisplay.textContent = '0';
             timerDisplay.textContent = timeLeft;
             incorrectWords = [];
@@ -496,7 +491,7 @@
         function endGame() {
             clearTimeout(questionTimeout);
             clearInterval(timerInterval);
-            finalScoreDisplay.textContent = score;
+            finalScoreDisplay.textContent = `${score} / ${WORDS.length}`;
             gameOverScreen.style.display = 'flex';
             gameArea.querySelectorAll('.word').forEach(word => word.remove());
         }
@@ -516,18 +511,6 @@
                 autoAdvanceTime++;
                 autoAdvanceTimeDisplay.textContent = autoAdvanceTime;
             }
-        });
-
-        resPcBtn.addEventListener('click', () => {
-            gameContainer.classList.remove('mobile-view');
-            resPcBtn.classList.add('active');
-            resMobileBtn.classList.remove('active');
-        });
-
-        resMobileBtn.addEventListener('click', () => {
-            gameContainer.classList.add('mobile-view');
-            resMobileBtn.classList.add('active');
-            resPcBtn.classList.remove('active');
         });
 
         window.onload = init;
