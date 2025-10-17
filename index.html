@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영어 단어 맞추기</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/DungGeunMo.css');
+
+        :root {
+            --bg-color: #f0f0f0;
+            --main-color: #333;
+            --accent-color: #ff6b6b;
+            --border-color: #333;
+            --game-bg: #fff;
+            --btn-bg: #92e192;
+            --btn-shadow: #5aa15a;
+        }
+
+        body {
+            font-family: 'DungGeunMo', cursive;
+            background-color: var(--bg-color);
+            color: var(--main-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        #game-container {
+            width: 90vw;
+            max-width: 800px;
+            height: 90vh;
+            max-height: 900px;
+            background-color: var(--game-bg);
+            border: 4px solid var(--border-color);
+            box-shadow: 8px 8px 0px var(--border-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        #info-bar {
+            padding: 10px 15px;
+            border-bottom: 4px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+            position: relative; /* For korean meaning container positioning */
+        }
+        
+        #korean-meaning-container {
+            position: absolute;
+            top: 70px; /* info-bar 아래로 위치 조정 */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            color: var(--accent-color);
+            background-color: #fff8a8;
+            padding: 5px 10px;
+            border: 2px solid var(--border-color);
+            z-index: 5;
+            max-width: 80%;
+            min-height: 28px; /* 높이 고정 */
+        }
+
+        #game-area {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        .word {
+            position: absolute;
+            user-select: none;
+            cursor: pointer;
+            padding: 8px 12px;
+            background-color: #add8e6;
+            border: 3px solid var(--border-color);
+            white-space: nowrap;
+            font-size: 16px;
+            box-shadow: 4px 4px 0px var(--border-color);
+            transition: transform 0.1s ease, background-color 0.1s ease;
+        }
+        
+        .word:hover {
+            background-color: #fff8a8;
+            transform: scale(1.05);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .overlay h2 { font-size: 24px; margin-bottom: 20px; }
+        .overlay p { font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
+
+        .btn {
+            font-family: 'DungGeunMo', cursive;
+            font-size: 18px;
+            padding: 15px 30px;
+            border: 4px solid var(--border-color);
+            background-color: var(--btn-bg);
+            cursor: pointer;
+            box-shadow: 4px 4px 0px var(--border-color);
+            transition: all 0.1s ease;
+        }
+
+        .btn:active { transform: translate(4px, 4px); box-shadow: none; }
+        .btn:disabled { background-color: #ccc; cursor: not-allowed; box-shadow: 4px 4px 0px #999; }
+
+        #file-upload-label { display: inline-block; margin-top: 10px; margin-bottom: 20px; }
+        #file-input { display: none; }
+
+        #feedback-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: var(--accent-color);
+            padding: 20px;
+            background-color: rgba(255, 255, 240, 0.95);
+            border: 4px solid var(--accent-color);
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        #feedback-message.show { opacity: 1; }
+
+        #timer-settings-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+        #timer-settings-container button {
+            font-family: 'DungGeunMo', cursive;
+            background: #ddd;
+            border: 2px solid var(--border-color);
+            width: 25px;
+            height: 25px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #auto-advance-time-display {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* --- 반응형 웹 디자인 적용 --- */
+        @media (max-width: 768px) {
+            #game-container {
+                width: 95vw;
+                height: 90vh;
+            }
+            #info-bar { 
+                font-size: 12px; 
+                padding: 10px; 
+                gap: 5px;
+            }
+            #korean-meaning-container { 
+                font-size: 16px; 
+                top: 65px; 
+            }
+            .overlay h2 { font-size: 20px; }
+            .overlay p { font-size: 12px; }
+            .btn { font-size: 16px; padding: 12px 24px; }
+            .word { font-size: 14px; padding: 6px 10px; }
+
+            #timer-settings-container {
+                /* 작은 화면에서 시간 조절 UI가 SCORE 아래로 가도록 설정 */
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                padding-top: 5px;
+            }
+             #score-container { order: 1;}
+             #timer-container { order: 2;}
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="info-bar">
+            <div id="score-container">SCORE: <span id="score">0</span> / <span id="total-words">0</span></div>
+            <div id="timer-settings-container">
+                <span>시간(초):</span>
+                <button id="time-minus-btn">-</button>
+                <span id="auto-advance-time-display">5</span>
+                <button id="time-plus-btn">+</button>
+            </div>
+            <div id="timer-container">TIME: <span id="timer">60</span></div>
+        </div>
+        <div id="korean-meaning-container">뜻</div>
+
+        <div id="game-area">
+            <div id="start-screen" class="overlay">
+                <h2>단어 맞추기 게임</h2>
+                <!-- 해상도 선택 버튼 제거 -->
+                <p>
+                    CSV 파일을 선택하세요. (EUC-KR 인코딩 권장)<br>
+                    (예: apple,사과)<br>
+                    (뜻이 여러개면 콤마(,)로 구분: run,달리다,운영하다)
+                </p>
+                <label for="file-input" class="btn" id="file-upload-label">파일 선택</label>
+                <input type="file" id="file-input" accept=".csv">
+                <button id="start-btn" class="btn">START</button>
+            </div>
+            <div id="game-over-screen" class="overlay" style="display: none;">
+                <h2>GAME OVER</h2>
+                <p>최종 점수: <span id="final-score">0</span>점</p>
+                <button id="restart-btn" class="btn">RESTART</button>
+            </div>
+        </div>
+        <div id="feedback-message"></div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const gameArea = document.getElementById('game-area');
+        const scoreDisplay = document.getElementById('score');
+        const totalWordsDisplay = document.getElementById('total-words');
+        const timerDisplay = document.getElementById('timer');
+        const koreanMeaningDisplay = document.getElementById('korean-meaning-container');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const fileInput = document.getElementById('file-input');
+        const fileUploadLabel = document.getElementById('file-upload-label');
+        const timeMinusBtn = document.getElementById('time-minus-btn');
+        const timePlusBtn = document.getElementById('time-plus-btn');
+        const autoAdvanceTimeDisplay = document.getElementById('auto-advance-time-display');
+
+        const SPECIAL_MESSAGES = ["Good Job", "Excellent", "You are Genius"];
+        
+        let WORDS = [];
+        let score = 0;
+        let timeLeft = 60;
+        let currentTargetWord = '';
+        let timerInterval;
+        let questionTimeout;
+        let autoAdvanceTime = 5;
+        let audioCtx;
+
+        let currentWords = [];
+        let incorrectWords = [];
+        
+        function init() {
+            score = 0;
+            timeLeft = 60;
+            scoreDisplay.textContent = '0';
+            totalWordsDisplay.textContent = WORDS.length > 0 ? WORDS.length : '0';
+            timerDisplay.textContent = timeLeft;
+            koreanMeaningDisplay.textContent = '뜻';
+            gameOverScreen.style.display = 'none';
+            startScreen.style.display = 'flex';
+            startBtn.disabled = true;
+            fileUploadLabel.textContent = '파일 선택';
+            fileUploadLabel.style.backgroundColor = 'var(--btn-bg)';
+            gameArea.querySelectorAll('.word').forEach(word => word.remove());
+        }
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file, 'EUC-KR');
+        }
+
+        function parseCSV(text) {
+            WORDS = [];
+            const lines = text.split(/\r?\n/);
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length >= 2 && parts[0].trim() !== '') {
+                    const englishWord = parts[0].trim();
+                    const koreanMeanings = parts.slice(1).map(meaning => meaning.trim()).filter(m => m !== '');
+                    if (koreanMeanings.length > 0) {
+                        WORDS.push({ en: englishWord, ko: koreanMeanings });
+                    }
+                }
+            });
+            if (WORDS.length >= 5) {
+                startBtn.disabled = false;
+                fileUploadLabel.textContent = `단어 ${WORDS.length}개 로드!`;
+                fileUploadLabel.style.backgroundColor = '#92e192';
+                totalWordsDisplay.textContent = WORDS.length;
+                scoreDisplay.textContent = '0';
+            } else {
+                startBtn.disabled = true;
+                fileUploadLabel.textContent = '단어 5개 이상 필요!';
+                fileUploadLabel.style.backgroundColor = '#ff6b6b';
+                alert('게임 플레이를 위해 최소 5개의 단어가 포함된 파일을 선택해주세요.');
+                totalWordsDisplay.textContent = '0';
+                scoreDisplay.textContent = '0';
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.01);
+            if (type === 'correct') {
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                oscillator.type = 'sine';
+            } else { // incorrect
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                oscillator.type = 'square';
+            }
+            oscillator.start(audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+            oscillator.stop(audioCtx.currentTime + 0.15);
+        }
+
+        function nextWord() {
+            clearTimeout(questionTimeout);
+            if (currentWords.length === 0) {
+                if (incorrectWords.length > 0) {
+                    showFeedbackMessage("틀린 단어 다시 시작!");
+                    currentWords = [...incorrectWords].sort(() => Math.random() - 0.5);
+                    incorrectWords = [];
+                } else {
+                    showFeedbackMessage("모든 단어 성공!");
+                    currentWords = [...WORDS].sort(() => Math.random() - 0.5);
+                }
+            }
+
+            if (currentWords.length > 0) {
+                const currentWordObject = currentWords.pop();
+                currentTargetWord = currentWordObject.en;
+                koreanMeaningDisplay.textContent = currentWordObject.ko.join(', ');
+                displayNewWords();
+                questionTimeout = setTimeout(() => {
+                    handleAnswer(false); 
+                }, autoAdvanceTime * 1000);
+            } else {
+                endGame();
+            }
+        }
+        
+        function checkCollision(rect1, rect2) {
+            const padding = 5; 
+            return (
+                rect1.x < rect2.x + rect2.width + padding &&
+                rect1.x + rect1.width + padding > rect2.x &&
+                rect1.y < rect2.y + rect2.height + padding &&
+                rect1.y + rect1.height + padding > rect2.y
+            );
+        }
+
+        function displayNewWords() {
+            gameArea.querySelectorAll('.word').forEach(word => word.remove());
+            const options = new Set([currentTargetWord]);
+            while (options.size < 5) {
+                options.add(WORDS[Math.floor(Math.random() * WORDS.length)].en);
+            }
+            const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+            
+            const placedWordRects = [];
+
+            shuffledOptions.forEach(wordText => {
+                const wordEl = document.createElement('div');
+                wordEl.classList.add('word');
+                wordEl.textContent = wordText;
+                
+                wordEl.style.visibility = 'hidden';
+                gameArea.appendChild(wordEl);
+                const wordWidth = wordEl.offsetWidth;
+                const wordHeight = wordEl.offsetHeight;
+                gameArea.removeChild(wordEl);
+                wordEl.style.visibility = 'visible';
+
+                const gameAreaWidth = gameArea.clientWidth;
+                const gameAreaHeight = gameArea.clientHeight;
+                const topOffset = 120; // 한글 뜻 아래부터 단어 표시
+
+                let randomX, randomY, newRect;
+                let attempts = 0;
+                let hasOverlap;
+
+                do {
+                    randomX = Math.random() * (gameAreaWidth - wordWidth);
+                    randomY = Math.random() * (gameAreaHeight - wordHeight - topOffset) + topOffset;
+                    
+                    newRect = { x: randomX, y: randomY, width: wordWidth, height: wordHeight };
+                    
+                    hasOverlap = placedWordRects.some(placedRect => checkCollision(newRect, placedRect));
+                    attempts++;
+                } while (hasOverlap && attempts < 50);
+
+                placedWordRects.push(newRect);
+
+                wordEl.style.left = `${randomX}px`;
+                wordEl.style.top = `${randomY}px`;
+                gameArea.appendChild(wordEl);
+            });
+        }
+        
+        function showFeedbackMessage(text) {
+            feedbackMessage.textContent = text;
+            feedbackMessage.classList.add('show');
+            setTimeout(() => { feedbackMessage.classList.remove('show'); }, 1500);
+        }
+        
+        function handleAnswer(isCorrect) {
+            playSound(isCorrect ? 'correct' : 'incorrect');
+            if (isCorrect) {
+                score++;
+                scoreDisplay.textContent = score;
+                if (score > 0 && score % 5 === 0) {
+                    const randomIndex = Math.floor(Math.random() * SPECIAL_MESSAGES.length);
+                    const message = SPECIAL_MESSAGES[randomIndex];
+                    showFeedbackMessage(message);
+                }
+            } else {
+                const incorrectWordObject = WORDS.find(w => w.en === currentTargetWord);
+                if (incorrectWordObject && !incorrectWords.some(w => w.en === incorrectWordObject.en)) {
+                    incorrectWords.push(incorrectWordObject);
+                }
+            }
+            nextWord();
+        }
+
+        gameArea.addEventListener('click', (e) => {
+            if (e.target.classList.contains('word')) {
+                handleAnswer(e.target.textContent === currentTargetWord);
+            }
+        });
+
+        function startGame() {
+            if (!audioCtx) {
+                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } 
+                catch (e) { console.error("Web Audio API is not supported"); }
+            }
+            if (WORDS.length < 5) {
+                alert('단어 5개 이상이 포함된 파일을 선택해주세요.');
+                return;
+            }
+            startScreen.style.display = 'none';
+            score = 0;
+            timeLeft = WORDS.length * 5; // 전체 시간을 단어 수 * 5초로 설정
+            scoreDisplay.textContent = '0';
+            timerDisplay.textContent = timeLeft;
+            incorrectWords = [];
+            currentWords = [...WORDS].sort(() => Math.random() - 0.5);
+            nextWord();
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            clearTimeout(questionTimeout);
+            clearInterval(timerInterval);
+            finalScoreDisplay.textContent = `${score} / ${WORDS.length}`;
+            gameOverScreen.style.display = 'flex';
+            gameArea.querySelectorAll('.word').forEach(word => word.remove());
+        }
+
+        fileInput.addEventListener('change', handleFileSelect);
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', init);
+
+        timeMinusBtn.addEventListener('click', () => {
+            if (autoAdvanceTime > 2) {
+                autoAdvanceTime--;
+                autoAdvanceTimeDisplay.textContent = autoAdvanceTime;
+            }
+        });
+        timePlusBtn.addEventListener('click', () => {
+            if (autoAdvanceTime < 10) {
+                autoAdvanceTime++;
+                autoAdvanceTimeDisplay.textContent = autoAdvanceTime;
+            }
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>
+
